@@ -6,18 +6,45 @@ import {
   HelpCircle, 
   LogOut,
   Star,
-  MapPin
+  MapPin,
+  LogIn
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useApp } from '@/contexts/AppContext';
-import { currentUser } from '@/data/mockData';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 
 export default function ProfilePage() {
+  const { user, profile, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const { orders } = useApp();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
+
+  // Show login prompt if not authenticated
+  if (!loading && !user) {
+    return (
+      <AppLayout>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
+          <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-4">
+            <LogIn className="w-8 h-8 text-muted-foreground" />
+          </div>
+          <h2 className="text-xl font-bold mb-2">Sign in to continue</h2>
+          <p className="text-muted-foreground text-center mb-6">
+            Create an account to buy & sell chickens on Kuku Market
+          </p>
+          <Button size="lg" onClick={() => navigate('/auth')}>
+            Sign In / Sign Up
+          </Button>
+        </div>
+      </AppLayout>
+    );
+  }
 
   const menuItems = [
     { icon: Package, label: 'My Orders', count: orders.length, action: () => navigate('/orders') },
@@ -37,25 +64,27 @@ export default function ProfilePage() {
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
               <span className="text-2xl font-bold text-primary">
-                {currentUser.name.charAt(0)}
+                {profile?.full_name?.charAt(0) || user?.email?.charAt(0) || '?'}
               </span>
             </div>
             <div className="flex-1">
-              <h1 className="text-xl font-bold">{currentUser.name}</h1>
-              <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                <MapPin className="w-3.5 h-3.5" />
-                <span>{currentUser.location}</span>
-              </div>
+              <h1 className="text-xl font-bold">{profile?.full_name || 'User'}</h1>
+              {profile?.location && (
+                <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                  <MapPin className="w-3.5 h-3.5" />
+                  <span>{profile.location}</span>
+                </div>
+              )}
               <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
                 <Star className="w-3.5 h-3.5 fill-secondary text-secondary" />
-                <span>{currentUser.rating} rating</span>
+                <span>{profile?.rating || 0} rating</span>
               </div>
             </div>
           </div>
           
           <div className="grid grid-cols-2 gap-3 mt-5">
             <div className="bg-muted rounded-xl p-3 text-center">
-              <p className="text-2xl font-bold text-primary">{currentUser.totalSales}</p>
+              <p className="text-2xl font-bold text-primary">{profile?.total_sales || 0}</p>
               <p className="text-xs text-muted-foreground">Total Sales</p>
             </div>
             <div className="bg-muted rounded-xl p-3 text-center">
@@ -72,7 +101,7 @@ export default function ProfilePage() {
           transition={{ delay: 0.1 }}
           className="bg-card rounded-2xl border border-border overflow-hidden"
         >
-          {menuItems.map((item, index) => (
+          {menuItems.map((item) => (
             <button
               key={item.label}
               className="w-full flex items-center gap-4 px-5 py-4 hover:bg-muted/50 active:bg-muted transition-colors border-b border-border last:border-0"
@@ -142,7 +171,7 @@ export default function ProfilePage() {
         )}
 
         {/* Logout */}
-        <Button variant="outline" className="w-full" size="lg">
+        <Button variant="outline" className="w-full" size="lg" onClick={handleSignOut}>
           <LogOut className="w-4 h-4 mr-2" />
           Sign Out
         </Button>
