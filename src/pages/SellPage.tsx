@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Camera, X } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useApp } from '@/contexts/AppContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { COUNTIES, BREEDS } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,10 +19,12 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
+import { ImageUpload } from '@/components/listings/ImageUpload';
 
 export default function SellPage() {
   const navigate = useNavigate();
   const { addListing } = useApp();
+  const { user } = useAuth();
   
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -32,11 +35,22 @@ export default function SellPage() {
   const [location, setLocation] = useState('');
   const [county, setCounty] = useState('');
   const [isNegotiable, setIsNegotiable] = useState(false);
-  const [images, setImages] = useState<string[]>(['/placeholder.svg']);
+  const [images, setImages] = useState<string[]>([]);
 
   const handleSubmit = () => {
+    if (!user) {
+      toast.error('Please sign in to create a listing');
+      navigate('/auth');
+      return;
+    }
+
     if (!title || !breed || !price || !quantity || !location || !county) {
       toast.error('Please fill in all required fields');
+      return;
+    }
+
+    if (images.length === 0) {
+      toast.error('Please add at least one photo');
       return;
     }
 
@@ -75,24 +89,8 @@ export default function SellPage() {
       >
         {/* Photos */}
         <div>
-          <Label className="text-sm font-medium mb-3 block">Photos</Label>
-          <div className="flex gap-3 overflow-x-auto pb-2">
-            <button className="w-24 h-24 rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center text-muted-foreground shrink-0 hover:border-primary hover:text-primary transition-colors">
-              <Camera className="w-6 h-6" />
-              <span className="text-xs mt-1">Add</span>
-            </button>
-            {images.map((img, idx) => (
-              <div key={idx} className="relative w-24 h-24 rounded-xl overflow-hidden shrink-0">
-                <img src={img} alt="" className="w-full h-full object-cover" />
-                <button
-                  className="absolute top-1 right-1 w-6 h-6 bg-background/80 rounded-full flex items-center justify-center"
-                  onClick={() => setImages(images.filter((_, i) => i !== idx))}
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
-          </div>
+          <Label className="text-sm font-medium mb-3 block">Photos *</Label>
+          <ImageUpload images={images} onImagesChange={setImages} maxImages={5} />
         </div>
 
         {/* Title */}
