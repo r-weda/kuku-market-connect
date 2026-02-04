@@ -24,7 +24,7 @@ export interface Listing {
   county: string;
   isNegotiable: boolean;
   postedAt: string;
-  status: 'active' | 'sold' | 'paused';
+  status: 'active' | 'sold' | 'paused' | 'expired';
 }
 
 export interface ChatMessage {

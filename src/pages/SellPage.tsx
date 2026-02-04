@@ -24,7 +24,7 @@ import { ImageUpload } from '@/components/listings/ImageUpload';
 export default function SellPage() {
   const navigate = useNavigate();
   const { addListing } = useApp();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -36,9 +36,10 @@ export default function SellPage() {
   const [county, setCounty] = useState('');
   const [isNegotiable, setIsNegotiable] = useState(false);
   const [images, setImages] = useState<string[]>([]);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = () => {
-    if (!user) {
+  const handleSubmit = async () => {
+    if (!user || !profile) {
       toast.error('Please sign in to create a listing');
       navigate('/auth');
       return;
@@ -54,7 +55,8 @@ export default function SellPage() {
       return;
     }
 
-    addListing({
+    setSubmitting(true);
+    const { error } = await addListing({
       title,
       description,
       breed,
@@ -65,7 +67,14 @@ export default function SellPage() {
       location,
       county,
       isNegotiable,
-    });
+    }, profile.id);
+
+    setSubmitting(false);
+
+    if (error) {
+      toast.error('Failed to create listing. Please try again.');
+      return;
+    }
 
     toast.success('Listing created successfully!');
     navigate('/');
@@ -211,8 +220,8 @@ export default function SellPage() {
 
       {/* Submit Button */}
       <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border p-4 safe-bottom">
-        <Button className="w-full" size="lg" onClick={handleSubmit}>
-          Post Listing
+        <Button className="w-full" size="lg" onClick={handleSubmit} disabled={submitting}>
+          {submitting ? 'Creating...' : 'Post Listing'}
         </Button>
       </div>
     </AppLayout>
