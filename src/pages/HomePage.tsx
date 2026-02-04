@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ShoppingCart, Bell, ChevronDown } from 'lucide-react';
+import { ShoppingCart, Bell, ChevronDown, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { ListingGrid } from '@/components/listings/ListingGrid';
@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 export default function HomePage() {
-  const { listings, cart } = useApp();
+  const { listings, cart, loadingListings } = useApp();
   const [selectedCounty, setSelectedCounty] = useState<string>('All');
   const [selectedBreed, setSelectedBreed] = useState<string>('All');
 
@@ -99,10 +99,16 @@ export default function HomePage() {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
       >
-        <ListingGrid
-          listings={filteredListings}
-          emptyMessage="No chickens available in this area"
-        />
+        {loadingListings ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <ListingGrid
+            listings={filteredListings}
+            emptyMessage="No chickens available in this area"
+          />
+        )}
       </motion.div>
     </AppLayout>
   );
