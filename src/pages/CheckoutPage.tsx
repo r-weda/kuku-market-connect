@@ -3,18 +3,22 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Phone, Loader2, CheckCircle2 } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const { cart, getCartTotal, createOrder, clearCart } = useApp();
+  const { user } = useAuth();
   const { subtotal, platformFee, total } = getCartTotal();
   const [phone, setPhone] = useState('');
   const [processing, setProcessing] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'stk_sent' | 'confirming'>('idle');
 
   if (cart.length === 0 && !success) {
     navigate('/cart');
@@ -27,19 +31,77 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (!user) {
+      toast.error('Please login to complete your purchase');
+      navigate('/auth');
+      return;
+    }
+
     setProcessing(true);
+    setPaymentStatus('stk_sent');
 
-    // Simulate M-Pesa STK Push
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    try {
+      // Call M-Pesa STK Push edge function
+      const { data, error } = await supabase.functions.invoke('mpesa-stk-push', {
+        body: {
+          phone,
+          amount: total,
+          orderId: `order_${Date.now()}`,
+          accountReference: 'KukuMarket',
+        },
+      });
 
-    // Create orders and clear cart
-    cart.forEach((item) => {
-      createOrder([item]);
-    });
-    clearCart();
-    
-    setProcessing(false);
-    setSuccess(true);
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'Payment initiation failed');
+      }
+
+      // In demo mode, simulate payment confirmation
+      if (data.demo) {
+        setPaymentStatus('confirming');
+        toast.info('Check your phone for M-Pesa prompt (demo mode)');
+        
+        // Simulate waiting for payment confirmation
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        
+        // Create orders and clear cart
+        cart.forEach((item) => {
+          createOrder([item]);
+        });
+        clearCart();
+        
+        setSuccess(true);
+        toast.success('Payment successful!');
+      } else {
+        // Real mode: show waiting message
+        toast.info('Check your phone for M-Pesa prompt');
+        setPaymentStatus('confirming');
+        
+        // Wait for payment confirmation
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+        
+        cart.forEach((item) => {
+          createOrder([item]);
+        });
+        clearCart();
+        setSuccess(true);
+      }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Payment failed';
+      toast.error(errorMessage);
+      setPaymentStatus('idle');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const getPaymentButtonText = () => {
+    if (paymentStatus === 'stk_sent') return 'Sending STK Push...';
+    if (paymentStatus === 'confirming') return 'Waiting for confirmation...';
+    return `Pay KES ${total.toLocaleString()}`;
   };
 
   if (success) {
@@ -181,10 +243,10 @@ export default function CheckoutPage() {
           {processing ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Processing...
+              {getPaymentButtonText()}
             </>
           ) : (
-            `Pay KES ${total.toLocaleString()}`
+            getPaymentButtonText()
           )}
         </Button>
       </div>
