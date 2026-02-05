@@ -5,6 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useApp } from '@/contexts/AppContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { COUNTIES, BREEDS } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,6 +42,14 @@ export default function SellPage() {
   const handleSubmit = async () => {
     if (!user || !profile) {
       toast.error('Please sign in to create a listing');
+      navigate('/auth');
+      return;
+    }
+
+    // Verify session is still valid before proceeding
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !session) {
+      toast.error('Your session has expired. Please sign in again.');
       navigate('/auth');
       return;
     }
