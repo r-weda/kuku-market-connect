@@ -44,7 +44,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           avatar_url,
           rating,
           total_sales,
-          is_seller
+          is_seller,
+          created_at
         )
       `)
       .eq('status', 'active')
@@ -68,7 +69,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         avatar: item.seller.avatar_url || '/placeholder.svg',
         rating: Number(item.seller.rating) || 0,
         totalSales: item.seller.total_sales || 0,
-        joinedDate: '',
+        joinedDate: item.seller.created_at || new Date().toISOString(),
       } : currentUser,
       title: item.title,
       description: item.description || '',
