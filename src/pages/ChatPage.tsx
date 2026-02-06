@@ -41,13 +41,11 @@ export default function ChatPage() {
 
   const listing = listings.find((l) => l.id === listingId);
 
-  if (!listing) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground">Listing not found</p>
-      </div>
-    );
-  }
+  const sellerName = listing?.seller?.name || 'Seller';
+  const sellerInitial = sellerName.charAt(0);
+  const listingTitle = listing?.title || 'Listing';
+  const listingImage = listing?.images?.[0] || '/placeholder.svg';
+  const listingPrice = listing?.pricePerUnit;
 
   const handleSend = () => {
     if (!message.trim()) return;
@@ -76,12 +74,12 @@ export default function ChatPage() {
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
               <span className="text-sm font-bold text-primary">
-                {listing.seller.name.charAt(0)}
+                {sellerInitial}
               </span>
             </div>
             <div className="min-w-0">
-              <h2 className="font-semibold text-sm truncate">{listing.seller.name}</h2>
-              <p className="text-xs text-muted-foreground truncate">{listing.title}</p>
+              <h2 className="font-semibold text-sm truncate">{sellerName}</h2>
+              <p className="text-xs text-muted-foreground truncate">{listingTitle}</p>
             </div>
           </div>
           
@@ -94,22 +92,26 @@ export default function ChatPage() {
         </div>
         
         {/* Listing Preview */}
-        <button 
-          className="w-full flex items-center gap-3 px-4 py-2 bg-muted/50 hover:bg-muted transition-colors"
-          onClick={() => navigate(`/listing/${listing.id}`)}
-        >
-          <img 
-            src={listing.images[0]} 
-            alt={listing.title}
-            className="w-12 h-12 rounded-lg object-cover"
-          />
-          <div className="text-left min-w-0">
-            <p className="text-sm font-medium truncate">{listing.title}</p>
-            <p className="text-sm text-primary font-bold">
-              KES {listing.pricePerUnit.toLocaleString()}/bird
-            </p>
-          </div>
-        </button>
+        {listing && (
+          <button 
+            className="w-full flex items-center gap-3 px-4 py-2 bg-muted/50 hover:bg-muted transition-colors"
+            onClick={() => navigate(`/listing/${listing.id}`)}
+          >
+            <img 
+              src={listingImage} 
+              alt={listingTitle}
+              className="w-12 h-12 rounded-lg object-cover"
+            />
+            <div className="text-left min-w-0">
+              <p className="text-sm font-medium truncate">{listingTitle}</p>
+              {listingPrice && (
+                <p className="text-sm text-primary font-bold">
+                  KES {listingPrice.toLocaleString()}/bird
+                </p>
+              )}
+            </div>
+          </button>
+        )}
       </header>
 
       {/* Messages */}
