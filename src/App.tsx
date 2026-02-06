@@ -9,8 +9,7 @@ import HomePage from "./pages/HomePage";
 import SearchPage from "./pages/SearchPage";
 import ListingDetailPage from "./pages/ListingDetailPage";
 import SellPage from "./pages/SellPage";
-import ChatsPage from "./pages/ChatsPage";
-import ChatPage from "./pages/ChatPage";
+import WalletPage from "./pages/WalletPage";
 import CartPage from "./pages/CartPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import ProfilePage from "./pages/ProfilePage";
@@ -33,8 +32,7 @@ const App = () => (
               <Route path="/search" element={<SearchPage />} />
               <Route path="/listing/:id" element={<ListingDetailPage />} />
               <Route path="/sell" element={<SellPage />} />
-              <Route path="/chats" element={<ChatsPage />} />
-              <Route path="/chat/:listingId" element={<ChatPage />} />
+              <Route path="/wallet" element={<WalletPage />} />
               <Route path="/cart" element={<CartPage />} />
               <Route path="/checkout" element={<CheckoutPage />} />
               <Route path="/profile" element={<ProfilePage />} />

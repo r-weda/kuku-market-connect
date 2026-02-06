@@ -116,7 +116,7 @@ export default function CartPage() {
             <span>KES {subtotal.toLocaleString()}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Platform Fee (5%)</span>
+            <span className="text-muted-foreground">Platform Fee (2.5%)</span>
             <span>KES {platformFee.toLocaleString()}</span>
           </div>
           <div className="flex justify-between font-bold text-lg pt-2 border-t border-border">

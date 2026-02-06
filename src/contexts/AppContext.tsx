@@ -1,13 +1,12 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { CartItem, Listing, Order, Conversation } from '@/types';
-import { mockConversations, mockOrders, currentUser } from '@/data/mockData';
+import { CartItem, Listing, Order } from '@/types';
+import { mockOrders, currentUser } from '@/data/mockData';
 import { supabase } from '@/integrations/supabase/client';
 
 interface AppContextType {
   listings: Listing[];
   cart: CartItem[];
   orders: Order[];
-  conversations: Conversation[];
   loadingListings: boolean;
   addToCart: (listing: Listing, quantity: number) => void;
   removeFromCart: (listingId: string) => void;
@@ -26,7 +25,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [loadingListings, setLoadingListings] = useState(true);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orders, setOrders] = useState<Order[]>(mockOrders);
-  const [conversations] = useState<Conversation[]>(mockConversations);
+  
 
   const fetchListings = async () => {
     setLoadingListings(true);
@@ -130,14 +129,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       (sum, item) => sum + item.listing.pricePerUnit * item.quantity,
       0
     );
-    const platformFee = Math.round(subtotal * 0.05);
+    const platformFee = Math.round(subtotal * 0.025);
     return { subtotal, platformFee, total: subtotal + platformFee };
   };
 
   const createOrder = (cartItems: CartItem[]): Order => {
     const item = cartItems[0];
     const subtotal = item.listing.pricePerUnit * item.quantity;
-    const platformFee = Math.round(subtotal * 0.05);
+    const platformFee = Math.round(subtotal * 0.025);
     
     const newOrder: Order = {
       id: `order-${Date.now()}`,
@@ -196,7 +195,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         listings,
         cart,
         orders,
-        conversations,
         loadingListings,
         addToCart,
         removeFromCart,
