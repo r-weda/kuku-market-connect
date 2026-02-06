@@ -222,7 +222,7 @@ export default function SellPage() {
         {/* Platform Fee Notice */}
         <div className="bg-muted rounded-xl p-4">
           <p className="text-sm text-muted-foreground">
-            <strong className="text-foreground">Platform Fee:</strong> 5% commission is automatically deducted from each successful sale.
+            <strong className="text-foreground">Platform Fee:</strong> 2.5% commission is automatically deducted from each successful sale.
           </p>
         </div>
       </motion.div>

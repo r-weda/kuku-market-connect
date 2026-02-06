@@ -182,7 +182,7 @@ export default function CheckoutPage() {
               <span>KES {subtotal.toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Platform Fee (5%)</span>
+              <span className="text-muted-foreground">Platform Fee (2.5%)</span>
               <span>KES {platformFee.toLocaleString()}</span>
             </div>
             <div className="flex justify-between font-bold text-lg pt-2 border-t border-border">
@@ -227,7 +227,7 @@ export default function CheckoutPage() {
         <div className="bg-muted rounded-xl p-4">
           <p className="text-sm text-muted-foreground">
             By completing this purchase, you agree to our terms of service. 
-            The 5% platform fee helps us maintain the marketplace and protect both buyers and sellers.
+            The 2.5% platform fee helps us maintain the marketplace and protect both buyers and sellers.
           </p>
         </div>
       </div>
