@@ -12,8 +12,8 @@ import { supabase } from '@/integrations/supabase/client';
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
-  const { cart, getCartTotal, createOrder, clearCart } = useApp();
-  const { user } = useAuth();
+  const { cart, getCartTotal, clearCart } = useApp();
+  const { user, profile } = useAuth();
   const { subtotal, platformFee, total } = getCartTotal();
   const [phone, setPhone] = useState('');
   const [processing, setProcessing] = useState(false);
@@ -59,36 +59,41 @@ export default function CheckoutPage() {
         throw new Error(data?.error || 'Payment initiation failed');
       }
 
-      // In demo mode, simulate payment confirmation
-      if (data.demo) {
-        setPaymentStatus('confirming');
-        toast.info('Check your phone for M-Pesa prompt (demo mode)');
-        
-        // Simulate waiting for payment confirmation
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-        
-        // Create orders and clear cart
-        cart.forEach((item) => {
-          createOrder([item]);
-        });
-        clearCart();
-        
-        setSuccess(true);
-        toast.success('Payment successful!');
-      } else {
-        // Real mode: show waiting message
-        toast.info('Check your phone for M-Pesa prompt');
-        setPaymentStatus('confirming');
-        
-        // Wait for payment confirmation
-        await new Promise((resolve) => setTimeout(resolve, 5000));
-        
-        cart.forEach((item) => {
-          createOrder([item]);
-        });
-        clearCart();
-        setSuccess(true);
+      setPaymentStatus('confirming');
+      toast.info(data.demo ? 'Check your phone for M-Pesa prompt (demo mode)' : 'Check your phone for M-Pesa prompt');
+
+      // Simulate waiting for payment confirmation
+      await new Promise((resolve) => setTimeout(resolve, data.demo ? 2000 : 5000));
+
+      // Create orders in database with 'paid' status — triggers wallet credit
+      for (const item of cart) {
+        const subtotal = item.listing.pricePerUnit * item.quantity;
+        const fee = Math.round(subtotal * 0.025);
+
+        const { error: orderError } = await supabase
+          .from('orders')
+          .insert({
+            buyer_id: profile!.id,
+            seller_id: item.listing.sellerId,
+            listing_id: item.listing.id,
+            quantity: item.quantity,
+            unit_price: item.listing.pricePerUnit,
+            subtotal,
+            platform_fee: fee,
+            total: subtotal + fee,
+            status: 'paid',
+            payment_method: 'mpesa',
+            mpesa_ref: data.checkoutRequestId || `demo_${Date.now()}`,
+          });
+
+        if (orderError) {
+          console.error('Error creating order:', orderError);
+        }
       }
+
+      clearCart();
+      setSuccess(true);
+      toast.success('Payment successful!');
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Payment failed';
       toast.error(errorMessage);
