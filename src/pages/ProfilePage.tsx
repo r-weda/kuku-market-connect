@@ -48,8 +48,8 @@ export default function ProfilePage() {
 
   const menuItems = [
     { icon: Package, label: 'My Orders', count: orders.length, action: () => navigate('/orders') },
-    { icon: Settings, label: 'Settings', action: () => {} },
-    { icon: HelpCircle, label: 'Help & Support', action: () => {} },
+    { icon: Settings, label: 'Settings', action: () => navigate('/settings') },
+    { icon: HelpCircle, label: 'Help & Support', action: () => navigate('/help') },
   ];
 
   return (
