@@ -153,7 +153,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-32">
+    <div className="min-h-screen bg-background pb-32 max-w-4xl mx-auto">
       <header className="sticky top-0 z-40 bg-background border-b border-border">
         <div className="flex items-center gap-4 px-4 py-3">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
@@ -239,21 +239,23 @@ export default function CheckoutPage() {
 
       {/* Pay Button */}
       <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border p-4 safe-bottom">
-        <Button 
-          className="w-full" 
-          size="lg" 
-          onClick={handlePayment}
-          disabled={processing}
-        >
-          {processing ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              {getPaymentButtonText()}
-            </>
-          ) : (
-            getPaymentButtonText()
-          )}
-        </Button>
+        <div className="max-w-4xl mx-auto">
+          <Button 
+            className="w-full" 
+            size="lg" 
+            onClick={handlePayment}
+            disabled={processing}
+          >
+            {processing ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                {getPaymentButtonText()}
+              </>
+            ) : (
+              getPaymentButtonText()
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   );

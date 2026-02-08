@@ -20,7 +20,7 @@ export default function OrdersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background max-w-4xl mx-auto">
       <header className="sticky top-0 z-40 bg-background border-b border-border">
         <div className="flex items-center gap-4 px-4 py-3">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>

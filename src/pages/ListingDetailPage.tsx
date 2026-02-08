@@ -55,7 +55,7 @@ export default function ListingDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-32">
+    <div className="min-h-screen bg-background pb-32 max-w-4xl mx-auto">
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-4 bg-gradient-to-b from-background/80 to-transparent">
         <Button
@@ -92,7 +92,7 @@ export default function ListingDetailPage() {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="aspect-square bg-muted"
+        className="aspect-square md:aspect-video bg-muted"
       >
         <img
           src={listing.images[0]}
@@ -193,7 +193,7 @@ export default function ListingDetailPage() {
 
       {/* Bottom Bar */}
       <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border p-4 safe-bottom">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 max-w-4xl mx-auto">
           {/* Quantity Selector */}
           <div className="flex items-center gap-2 bg-muted rounded-lg p-1">
             <Button

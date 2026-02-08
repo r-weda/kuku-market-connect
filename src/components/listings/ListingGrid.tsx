@@ -16,7 +16,7 @@ export function ListingGrid({ listings, emptyMessage = 'No listings found' }: Li
   }
 
   return (
-    <div className="grid grid-cols-2 gap-3 p-4">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 p-4">
       {listings.map((listing, index) => (
         <ListingCard key={listing.id} listing={listing} index={index} />
       ))}
