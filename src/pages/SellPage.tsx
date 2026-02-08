@@ -103,7 +103,7 @@ export default function SellPage() {
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="p-4 space-y-6 pb-24"
+        className="p-4 space-y-6 pb-24 max-w-2xl mx-auto"
       >
         {/* Photos */}
         <div>
@@ -229,9 +229,11 @@ export default function SellPage() {
 
       {/* Submit Button */}
       <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border p-4 safe-bottom">
-        <Button className="w-full" size="lg" onClick={handleSubmit} disabled={submitting}>
-          {submitting ? 'Creating...' : 'Post Listing'}
-        </Button>
+        <div className="max-w-6xl mx-auto">
+          <Button className="w-full md:w-auto md:min-w-[200px] md:float-right" size="lg" onClick={handleSubmit} disabled={submitting}>
+            {submitting ? 'Creating...' : 'Post Listing'}
+          </Button>
+        </div>
       </div>
     </AppLayout>
   );

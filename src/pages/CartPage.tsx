@@ -32,7 +32,7 @@ export default function CartPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-48">
+    <div className="min-h-screen bg-background pb-48 max-w-4xl mx-auto">
       <header className="sticky top-0 z-40 bg-background border-b border-border">
         <div className="flex items-center gap-4 px-4 py-3">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
@@ -110,7 +110,7 @@ export default function CartPage() {
 
       {/* Summary & Checkout */}
       <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border safe-bottom">
-        <div className="p-4 space-y-3">
+        <div className="p-4 space-y-3 max-w-4xl mx-auto">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Subtotal</span>
             <span>KES {subtotal.toLocaleString()}</span>

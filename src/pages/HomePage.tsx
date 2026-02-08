@@ -28,8 +28,8 @@ export default function HomePage() {
   return (
     <AppLayout>
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border">
-        <div className="flex items-center justify-between px-4 py-3">
+      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border md:hidden">
+        <div className="flex items-center justify-between px-4 py-3 max-w-6xl mx-auto">
           <div>
             <h1 className="text-xl font-bold text-primary">Kuku Market</h1>
             <p className="text-xs text-muted-foreground">Live Poultry Marketplace</p>
