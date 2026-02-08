@@ -96,21 +96,13 @@ export default function OrdersPage() {
                 )}
               </div>
 
-              <div className="flex gap-2 mt-4">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="flex-1"
-                  onClick={() => navigate(`/chat/${order.listing.id}`)}
-                >
-                  Contact Seller
-                </Button>
-                {order.status === 'paid' && (
-                  <Button size="sm" className="flex-1">
+              {order.status === 'paid' && (
+                <div className="mt-4">
+                  <Button size="sm" className="w-full">
                     Track Order
                   </Button>
-                )}
-              </div>
+                </div>
+              )}
             </motion.div>
           ))}
         </div>
