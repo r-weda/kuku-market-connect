@@ -340,7 +340,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      process_withdrawal: {
+        Args: { p_amount: number; p_phone: string; p_wallet_id: string }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

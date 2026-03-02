@@ -134,27 +134,14 @@ export default function WalletPage() {
 
     setWithdrawing(true);
     try {
-      // Create withdrawal transaction
-      const { error: txnError } = await supabase
-        .from('wallet_transactions')
-        .insert({
-          wallet_id: wallet.id,
-          amount: -amount,
-          type: 'withdrawal',
-          status: 'pending',
-          description: `Withdraw to M-Pesa ${withdrawPhone}`,
-          reference: `WD-${Date.now()}`,
-        });
+      // Use server-side function for atomic withdrawal with validation
+      const { data, error: rpcError } = await supabase.rpc('process_withdrawal', {
+        p_wallet_id: wallet.id,
+        p_amount: amount,
+        p_phone: withdrawPhone,
+      });
 
-      if (txnError) throw txnError;
-
-      // Deduct from available balance
-      const { error: walletError } = await supabase
-        .from('wallets')
-        .update({ available_balance: wallet.available_balance - amount })
-        .eq('id', wallet.id);
-
-      if (walletError) throw walletError;
+      if (rpcError) throw rpcError;
 
       toast.success('Withdrawal initiated. You will receive M-Pesa shortly.');
       setWithdrawOpen(false);
