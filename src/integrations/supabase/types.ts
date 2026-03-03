@@ -128,6 +128,33 @@ export type Database = {
           },
         ]
       }
+      mpesa_callbacks: {
+        Row: {
+          checkout_request_id: string
+          id: string
+          merchant_request_id: string | null
+          processed_at: string | null
+          raw_payload: Json | null
+          result_code: number | null
+        }
+        Insert: {
+          checkout_request_id: string
+          id?: string
+          merchant_request_id?: string | null
+          processed_at?: string | null
+          raw_payload?: Json | null
+          result_code?: number | null
+        }
+        Update: {
+          checkout_request_id?: string
+          id?: string
+          merchant_request_id?: string | null
+          processed_at?: string | null
+          raw_payload?: Json | null
+          result_code?: number | null
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           buyer_id: string
@@ -340,6 +367,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_pending_order: {
+        Args: { p_listing_id: string; p_quantity: number }
+        Returns: Json
+      }
+      get_seller_public_info: {
+        Args: { seller_ids: string[] }
+        Returns: {
+          avatar_url: string
+          county: string
+          created_at: string
+          full_name: string
+          id: string
+          is_seller: boolean
+          location: string
+          rating: number
+          total_sales: number
+          user_id: string
+        }[]
+      }
       process_withdrawal: {
         Args: { p_amount: number; p_phone: string; p_wallet_id: string }
         Returns: Json

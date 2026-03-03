@@ -38,22 +38,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setLoadingListings(true);
     const { data, error } = await supabase
       .from('listings')
-      .select(`
-        *,
-        seller:profiles!listings_seller_id_fkey (
-          id,
-          user_id,
-          full_name,
-          phone,
-          location,
-          county,
-          avatar_url,
-          rating,
-          total_sales,
-          is_seller,
-          created_at
-        )
-      `)
+      .select('*')
       .eq('status', 'active')
       .order('created_at', { ascending: false });
 
@@ -63,33 +48,51 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // Fetch seller public info via secure RPC (excludes phone)
+    const sellerIds = [...new Set((data || []).map(item => item.seller_id))];
+    let sellersMap: Record<string, any> = {};
+
+    if (sellerIds.length > 0) {
+      const { data: sellers } = await supabase.rpc('get_seller_public_info', {
+        seller_ids: sellerIds,
+      });
+      if (sellers) {
+        for (const s of sellers) {
+          sellersMap[s.id] = s;
+        }
+      }
+    }
+
     // Transform database format to app format
-    const transformedListings: Listing[] = (data || []).map((item) => ({
-      id: item.id,
-      sellerId: item.seller_id,
-      seller: item.seller ? {
-        id: item.seller.id,
-        name: item.seller.full_name,
-        phone: item.seller.phone,
-        location: item.seller.location || '',
-        avatar: item.seller.avatar_url || '/placeholder.svg',
-        rating: Number(item.seller.rating) || 0,
-        totalSales: item.seller.total_sales || 0,
-        joinedDate: item.seller.created_at || new Date().toISOString(),
-      } : currentUser,
-      title: item.title,
-      description: item.description || '',
-      breed: item.breed,
-      pricePerUnit: item.price_per_unit,
-      quantity: item.quantity,
-      minOrder: item.min_order || 1,
-      images: item.images || ['/placeholder.svg'],
-      location: item.location,
-      county: item.county,
-      postedAt: item.created_at,
-      status: item.status as 'active' | 'sold' | 'expired',
-      isNegotiable: item.is_negotiable || false,
-    }));
+    const transformedListings: Listing[] = (data || []).map((item) => {
+      const seller = sellersMap[item.seller_id];
+      return {
+        id: item.id,
+        sellerId: item.seller_id,
+        seller: seller ? {
+          id: seller.id,
+          name: seller.full_name,
+          phone: '', // Not exposed for security
+          location: seller.location || '',
+          avatar: seller.avatar_url || '/placeholder.svg',
+          rating: Number(seller.rating) || 0,
+          totalSales: seller.total_sales || 0,
+          joinedDate: seller.created_at || new Date().toISOString(),
+        } : currentUser,
+        title: item.title,
+        description: item.description || '',
+        breed: item.breed,
+        pricePerUnit: item.price_per_unit,
+        quantity: item.quantity,
+        minOrder: item.min_order || 1,
+        images: item.images || ['/placeholder.svg'],
+        location: item.location,
+        county: item.county,
+        postedAt: item.created_at,
+        status: item.status as 'active' | 'sold' | 'expired',
+        isNegotiable: item.is_negotiable || false,
+      };
+    });
 
     setListings(transformedListings);
     setLoadingListings(false);
