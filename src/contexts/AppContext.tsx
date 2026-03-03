@@ -23,7 +23,14 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export function AppProvider({ children }: { children: ReactNode }) {
   const [listings, setListings] = useState<Listing[]>([]);
   const [loadingListings, setLoadingListings] = useState(true);
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('kuku-cart');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [orders, setOrders] = useState<Order[]>(mockOrders);
   
 
@@ -91,6 +98,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     fetchListings();
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('kuku-cart', JSON.stringify(cart));
+  }, [cart]);
 
   const refreshListings = async () => {
     await fetchListings();
