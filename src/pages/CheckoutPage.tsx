@@ -13,12 +13,12 @@ import { supabase } from '@/integrations/supabase/client';
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const { cart, getCartTotal, clearCart } = useApp();
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const { subtotal, platformFee, total } = getCartTotal();
   const [phone, setPhone] = useState('');
   const [processing, setProcessing] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'stk_sent' | 'confirming'>('idle');
+  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'creating_orders' | 'stk_sent' | 'confirming'>('idle');
 
   if (cart.length === 0 && !success) {
     navigate('/cart');
@@ -38,62 +38,84 @@ export default function CheckoutPage() {
     }
 
     setProcessing(true);
-    setPaymentStatus('stk_sent');
+    setPaymentStatus('creating_orders');
 
     try {
-      // Call M-Pesa STK Push edge function
-      const { data, error } = await supabase.functions.invoke('mpesa-stk-push', {
+      // 1. Create orders server-side with validated pricing
+      const orderIds: string[] = [];
+      let serverTotal = 0;
+
+      for (const item of cart) {
+        const { data, error } = await supabase.rpc('create_pending_order', {
+          p_listing_id: item.listing.id,
+          p_quantity: item.quantity,
+        });
+
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        const result = data as unknown as { order_id: string; amount_due: number };
+        orderIds.push(result.order_id);
+        serverTotal += result.amount_due;
+      }
+
+      // 2. Initiate M-Pesa STK Push
+      setPaymentStatus('stk_sent');
+      const { data: stkData, error: stkError } = await supabase.functions.invoke('mpesa-stk-push', {
         body: {
           phone,
-          amount: total,
-          orderId: `order_${Date.now()}`,
+          amount: serverTotal,
+          orderIds,
           accountReference: 'KukuMarket',
         },
       });
 
-      if (error) {
-        throw new Error(error.message);
+      if (stkError) {
+        throw new Error(stkError.message);
       }
 
-      if (!data?.success) {
-        throw new Error(data?.error || 'Payment initiation failed');
+      if (!stkData?.success) {
+        throw new Error(stkData?.error || 'Payment initiation failed');
       }
 
       setPaymentStatus('confirming');
-      toast.info(data.demo ? 'Check your phone for M-Pesa prompt (demo mode)' : 'Check your phone for M-Pesa prompt');
+      toast.info(stkData.demo ? 'Check your phone for M-Pesa prompt (demo mode)' : 'Check your phone for M-Pesa prompt');
 
-      // Simulate waiting for payment confirmation
-      await new Promise((resolve) => setTimeout(resolve, data.demo ? 2000 : 5000));
+      // 3. Poll for payment confirmation
+      const maxAttempts = stkData.demo ? 3 : 30;
+      const pollInterval = stkData.demo ? 1500 : 2000;
+      let paid = false;
 
-      // Create orders in database with 'paid' status — triggers wallet credit
-      for (const item of cart) {
-        const subtotal = item.listing.pricePerUnit * item.quantity;
-        const fee = Math.round(subtotal * 0.025);
+      for (let i = 0; i < maxAttempts; i++) {
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
 
-        const { error: orderError } = await supabase
+        const { data: orders } = await supabase
           .from('orders')
-          .insert({
-            buyer_id: profile!.id,
-            seller_id: item.listing.sellerId,
-            listing_id: item.listing.id,
-            quantity: item.quantity,
-            unit_price: item.listing.pricePerUnit,
-            subtotal,
-            platform_fee: fee,
-            total: subtotal + fee,
-            status: 'paid',
-            payment_method: 'mpesa',
-            mpesa_ref: data.checkoutRequestId || `demo_${Date.now()}`,
-          });
+          .select('status')
+          .in('id', orderIds);
 
-        if (orderError) {
-          console.error('Error creating order:', orderError);
+        if (orders && orders.every((o) => o.status === 'paid')) {
+          paid = true;
+          break;
         }
       }
 
-      clearCart();
-      setSuccess(true);
-      toast.success('Payment successful!');
+      if (!paid && stkData.demo) {
+        // In demo mode, simulate payment confirmation via edge function
+        // The demo STK push already handles this
+        paid = true;
+      }
+
+      if (paid) {
+        clearCart();
+        setSuccess(true);
+        toast.success('Payment successful!');
+      } else {
+        toast.info('Payment is still processing. Check your orders page for updates.');
+        clearCart();
+        navigate('/profile');
+      }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Payment failed';
       toast.error(errorMessage);
@@ -104,6 +126,7 @@ export default function CheckoutPage() {
   };
 
   const getPaymentButtonText = () => {
+    if (paymentStatus === 'creating_orders') return 'Creating order...';
     if (paymentStatus === 'stk_sent') return 'Sending STK Push...';
     if (paymentStatus === 'confirming') return 'Waiting for confirmation...';
     return `Pay KES ${total.toLocaleString()}`;

@@ -7,7 +7,6 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -20,7 +19,6 @@ serve(async (req) => {
     const body = await req.json();
     console.log('M-Pesa callback received:', JSON.stringify(body, null, 2));
 
-    // Extract callback data
     const { Body } = body;
     if (!Body?.stkCallback) {
       return new Response(JSON.stringify({ error: 'Invalid callback format' }), {
@@ -34,25 +32,48 @@ serve(async (req) => {
 
     console.log(`Payment result: ${ResultCode} - ${ResultDesc}`);
 
-    // Validate that we have a matching pending order with this CheckoutRequestID
-    // The STK push function stores the CheckoutRequestID in mpesa_ref when initiating
-    const { data: matchingOrder, error: matchError } = await supabase
+    // Replay protection: check if this callback was already processed
+    const { data: existingCallback } = await supabase
+      .from('mpesa_callbacks')
+      .select('id')
+      .eq('checkout_request_id', CheckoutRequestID)
+      .maybeSingle();
+
+    if (existingCallback) {
+      console.warn(`Duplicate callback for CheckoutRequestID: ${CheckoutRequestID}. Ignoring.`);
+      return new Response(JSON.stringify({ ResultCode: 0, ResultDesc: 'Already processed' }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Record callback for replay protection
+    await supabase.from('mpesa_callbacks').insert({
+      checkout_request_id: CheckoutRequestID,
+      merchant_request_id: MerchantRequestID,
+      result_code: ResultCode,
+      raw_payload: body,
+    });
+
+    // Find matching pending orders with timestamp validation (within 10 minutes)
+    const tenMinutesAgo = new Date(Date.now() - 600000).toISOString();
+    const { data: matchingOrders, error: matchError } = await supabase
       .from('orders')
       .select('id, status')
       .eq('mpesa_ref', CheckoutRequestID)
       .eq('status', 'pending')
-      .maybeSingle();
+      .gte('created_at', tenMinutesAgo);
 
     if (matchError) {
-      console.error('Error looking up order:', matchError);
+      console.error('Error looking up orders:', matchError);
       return new Response(JSON.stringify({ ResultCode: 0, ResultDesc: 'Accepted' }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    if (!matchingOrder) {
-      console.warn(`No matching pending order found for CheckoutRequestID: ${CheckoutRequestID}. Ignoring callback.`);
+    if (!matchingOrders || matchingOrders.length === 0) {
+      console.warn(`No matching pending orders found for CheckoutRequestID: ${CheckoutRequestID}. Ignoring.`);
       return new Response(JSON.stringify({ ResultCode: 0, ResultDesc: 'Accepted' }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -60,7 +81,6 @@ serve(async (req) => {
     }
 
     if (ResultCode === 0) {
-      // Payment successful - extract transaction details
       const metadata = CallbackMetadata?.Item || [];
       const getMetadataValue = (name: string) => metadata.find((i: any) => i.Name === name)?.Value;
 
@@ -70,32 +90,32 @@ serve(async (req) => {
 
       console.log(`Payment successful: ${mpesaRef}, Amount: ${amount}, Phone: ${phone}`);
 
-      // Update the verified order with the real M-Pesa receipt number
-      const { error: updateError } = await supabase
-        .from('orders')
-        .update({
-          status: 'paid',
-          mpesa_ref: mpesaRef,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', matchingOrder.id)
-        .eq('status', 'pending'); // Double-check status to prevent replay
+      // Update all matching orders
+      for (const order of matchingOrders) {
+        const { error: updateError } = await supabase
+          .from('orders')
+          .update({
+            status: 'paid',
+            mpesa_ref: mpesaRef,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', order.id)
+          .eq('status', 'pending');
 
-      if (updateError) {
-        console.error('Error updating order:', updateError);
+        if (updateError) {
+          console.error(`Error updating order ${order.id}:`, updateError);
+        }
       }
     } else {
       console.log(`Payment failed or cancelled: ${ResultDesc}`);
     }
 
-    // Safaricom expects a simple acknowledgment
     return new Response(JSON.stringify({ ResultCode: 0, ResultDesc: 'Accepted' }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error: unknown) {
     console.error('M-Pesa callback error:', error);
-    // Don't leak error details externally
     return new Response(JSON.stringify({ ResultCode: 0, ResultDesc: 'Accepted' }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
